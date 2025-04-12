@@ -4,7 +4,7 @@ import OurMap from "./components/Our-map";
 import Standard from "./components/Standards";
 import WhyUs from "./components/Why-Us";
 
-export default function Home() {
+export default async function Home() {
   return (
     <>
       <Banner />

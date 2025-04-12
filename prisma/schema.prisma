@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Brand {
+  id             Int        @id @default(autoincrement())
+  name_ar        String
+  name_en        String
+  description_ar String     @db.Text
+  description_en String     @db.Text
+  brand_text_ar  String     @db.Text
+  brand_text_en  String     @db.Text
+  color          String
+  main_image     String?
+  banner         String?
+  small_img      String?
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+  categories     Category[]
+}
+
+model Category {
+  id             Int       @id @default(autoincrement())
+  name_ar        String
+  name_en        String
+  description_ar String?   @db.Text
+  description_en String?   @db.Text
+  image          String
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  brand          Brand     @relation(fields: [brand_id], references: [id])
+  brand_id       Int
+  products       Product[]
+}
+
+model Product {
+  id             Int      @id @default(autoincrement())
+  name_ar        String
+  name_en        String
+  description_ar String   @db.Text
+  description_en String   @db.Text
+  color          String
+  image          String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  category       Category @relation(fields: [category_id], references: [id])
+  category_id    Int
+  recipes        Recipe[]
+}
+
+model Recipe {
+  id           Int      @id @default(autoincrement())
+  level        String // Easy, Medium, Hard
+  prep_time    Int // In minutes
+  cooking_time Int // In minutes
+  servings     Int
+  image        String?
+  ingredients  Json // Array of ingredients
+  instructions Json // Array of instruction steps
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  product      Product  @relation(fields: [product_id], references: [id])
+  product_id   Int
+}
