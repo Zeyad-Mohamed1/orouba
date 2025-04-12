@@ -1,0 +1,43 @@
+{
+  "home": {
+    "header": {
+      "home": "Home",
+      "about": "About Us",
+      "whoWeAre": "Who We Are",
+      "certifications": "Certifications",
+      "productCategories": "Product Categories",
+      "products": "Brands",
+      "export": "Export",
+      "recipes": "Recipes",
+      "contact": "Contact",
+      "careers": "Careers",
+      "downloadCatalog": "Download Catalog",
+      "selectLanguage": "Select Language",
+      "current": "Current",
+      "languageNote": "Content and interface will adapt to selected language"
+    },
+    "hero": {
+      "title": "From Vision to Reality",
+      "description": "Orouba for Food industry Co. was founded in 1998, with a vision to produce premium quality frozen food products. Our 20,000 square meter factory, equipped with state of the art technology and operated by our skilled engineers, ensures top quality production.  Committed to consumer satisfaction, we offer a diverse range of frozen vegetables, fruits, beans, and pre-fried products, made with simple, all natural ingredients."
+    },
+    "why-us": {
+      "title": "Why Orouba ?",
+      "subtitle": "Discover the Difference in Every Bite:",
+      "description": "Choosing Orouba means opting for quality, convenience, and a touch of culinary delight. Our all-natural, delicious products cater to diverse tastes, making meal prep easy and fun. Trust Orouba to turn ordinary meals into extraordinary experiences and bring joy to your kitchen. Join us and discover the delight of cooking with Orouba!",
+      "button": "Learn More"
+    },
+    "standards": {
+      "title": "Our Standards",
+      "subtitle": "We are committed to the highest standards of quality to ensure that every product we offer meets your needs and exceeds your expectations.",
+      "button": "Learn More",
+      "noPreservatives": "All products are free from any preservatives or chemical substances",
+      "selection": "All products undergo a selection analysis process to choose the best and high-quality fresh produce only",
+      "freezing": "Quick freezing through IQF tunnels. Deep-freeze compartment or freezer at (-18 C) 0 F."
+    },
+    "ourMap": {
+      "title": "Orouba World Map",
+      "description": "Our extensive network guarantees timely delivery to over 50 countries worldwide. Our journey began in Egypt, and now, we are present in the Middle East, Europe, Japan, USA & Australia.",
+      "button": "Learn More"
+    }
+  }
+}
