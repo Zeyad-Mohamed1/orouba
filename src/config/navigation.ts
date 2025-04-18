@@ -17,8 +17,8 @@ export const navigationLinks: NavigationItem[] = [
         href: "/certifications",
       },
       {
-        key: "productCategories",
-        href: "/product-categories",
+        key: "productTypes",
+        href: "/product-types",
       },
     ],
   },
@@ -48,15 +48,15 @@ export const languages: Language[] = [
   {
     code: "en",
     label: "English",
-    flag: "🇺🇸",
+    flag: "us",
     region: "United States",
     description: "Switch to English language",
   },
   {
     code: "ar",
     label: "العربية",
-    flag: "🇸🇦",
-    region: "Saudi Arabia",
+    flag: "eg",
+    region: "Egypt",
     description: "التحويل إلى اللغة العربية",
   },
 ];

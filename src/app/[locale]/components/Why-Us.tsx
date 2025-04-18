@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowRightIcon } from "lucide-react";
 import { ArrowLeftIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";

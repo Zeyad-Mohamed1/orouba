@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/app/generated/prisma"
 }
 
 datasource db {
@@ -65,6 +64,73 @@ model Recipe {
   instructions Json // Array of instruction steps
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
-  product      Product  @relation(fields: [product_id], references: [id])
-  product_id   Int
+  product      Product? @relation(fields: [product_id], references: [id])
+  product_id   Int?
+  dish         Dish     @relation(fields: [dish_id], references: [id])
+  dish_id      Int
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DishCategory {
+  id         Int      @id @default(autoincrement())
+  name_ar    String
+  name_en    String
+  image      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  dishes     Dish[]
+}
+
+model Dish {
+  id              Int          @id @default(autoincrement())
+  name_ar         String
+  name_en         String
+  image           String?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  recipes         Recipe[]
+  dishCategory    DishCategory @relation(fields: [dishCategory_id], references: [id])
+  dishCategory_id Int
+}
+
+model ExportRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  details   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Careers {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  cv        String
+  position  String?
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

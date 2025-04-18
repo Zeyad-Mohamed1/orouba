@@ -4,6 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Phone, Printer, Mail } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { Link as I18nLink } from "@/i18n/navigation";
 
 interface ContactInfo {
   icon: typeof MapPin;
@@ -11,24 +14,49 @@ interface ContactInfo {
   href?: string;
 }
 
+interface Brand {
+  id: number;
+  name_en: string;
+  name_ar: string;
+  path: string;
+}
+
 const Footer = () => {
+  const t = useTranslations("common");
+  const locale = useLocale();
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await fetch(`/api/brands?locale=${locale}`);
+        const data = await response.json();
+        setBrands(data.brands);
+      } catch (error) {
+        console.error("Failed to fetch brands:", error);
+        // Fallback to default brands if API fails
+        setBrands([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBrands();
+  }, [locale]);
+
   const footerLinks = {
-    brands: [
-      { name: "Basma", path: "/brands/basma" },
-      { name: "Farida", path: "/brands/farida" },
-      { name: "Bap Bites", path: "/brands/bap-bites" },
-    ],
     quickLinks: [
-      { name: "About Us", path: "/about" },
-      { name: "Our Products", path: "/products" },
-      { name: "Recipes", path: "/recipes" },
+      { name: t("about_us"), path: "/who-we-are" },
+      { name: t("our_products"), path: "/product-types" },
+      { name: t("recipes"), path: "/recipes" },
     ],
   };
 
   const contactInfo: ContactInfo[] = [
     {
       icon: MapPin,
-      text: "Obour city, Block 12008, section 5, Cairo, P.O.Box : El Obour 42, El Obour City, Egypt.",
+      text: t("address"),
     },
     { icon: Phone, text: "202 44890220", href: "tel:20244890220" },
     { icon: Printer, text: "202 44890227" },
@@ -47,6 +75,8 @@ const Footer = () => {
   const staggerContainer = {
     visible: { transition: { staggerChildren: 0.1 } },
   };
+
+  console.log(brands);
 
   return (
     <footer className="bg-[#003B7E] text-white relative">
@@ -68,46 +98,51 @@ const Footer = () => {
               variants={fadeInUp}
               className="md:col-span-3 flex items-start"
             >
-              <Link href="/" className="block relative group">
+              <I18nLink href="/" className="block relative group">
                 <Image
                   src="/logo.png"
-                  alt="Orouba Logo"
+                  alt={t("orouba_logo")}
                   width={120}
                   height={40}
                   className="object-contain transition-transform duration-300 group-hover:scale-105"
                 />
                 <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-[#FFD700] transition-all duration-300 group-hover:w-full" />
-              </Link>
+              </I18nLink>
             </motion.div>
 
             {/* Brands Section */}
             <motion.div variants={fadeInUp} className="md:col-span-3">
               <h3 className="text-[#FFD700] font-bold text-lg mb-4 relative inline-block">
-                OUR BRANDS
+                {t("our_brands")}
                 <span className="absolute -bottom-2 left-0 w-12 h-0.5 bg-[#FFD700]" />
               </h3>
               <ul className="space-y-3">
-                {footerLinks.brands.map((link) => (
-                  <motion.li
-                    key={link.name}
-                    variants={fadeInUp}
-                    className="transform transition-transform duration-300 hover:translate-x-2"
-                  >
-                    <Link
-                      href={link.path}
-                      className="hover:text-[#FFD700] transition-colors flex items-center gap-2 group"
+                {isLoading ? (
+                  <div className="text-white/70">{t("loading")}</div>
+                ) : (
+                  Array.isArray(brands) &&
+                  brands.map((brand, index) => (
+                    <motion.li
+                      key={index}
+                      variants={fadeInUp}
+                      className="transform transition-transform duration-300 hover:translate-x-2"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFD700] group-hover:scale-150 transition-transform" />
-                      {link.name}
-                    </Link>
-                  </motion.li>
-                ))}
+                      <I18nLink
+                        href={`/brands/${brand.id}`}
+                        className="hover:text-[#FFD700] transition-colors flex items-center gap-2 group"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FFD700] group-hover:scale-150 transition-transform" />
+                        {locale === "en" ? brand.name_en : brand.name_ar}
+                      </I18nLink>
+                    </motion.li>
+                  ))
+                )}
               </ul>
             </motion.div>
 
             <motion.div variants={fadeInUp} className="md:col-span-2">
               <h3 className="text-[#FFD700] font-bold text-lg mb-4 relative inline-block">
-                QUICK LINKS
+                {t("quick_links")}
                 <span className="absolute -bottom-2 left-0 w-12 h-0.5 bg-[#FFD700]" />
               </h3>
               <ul className="space-y-3">
@@ -117,13 +152,13 @@ const Footer = () => {
                     variants={fadeInUp}
                     className="transform transition-transform duration-300 hover:translate-x-2"
                   >
-                    <Link
+                    <I18nLink
                       href={link.path}
                       className="hover:text-[#FFD700] transition-colors flex items-center gap-2 group"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-[#FFD700] group-hover:scale-150 transition-transform" />
                       {link.name}
-                    </Link>
+                    </I18nLink>
                   </motion.li>
                 ))}
               </ul>
@@ -132,7 +167,7 @@ const Footer = () => {
             {/* Contact Information */}
             <motion.div variants={fadeInUp} className="md:col-span-4">
               <h3 className="text-[#FFD700] font-bold text-lg mb-4 relative inline-block">
-                CONTACT US
+                {t("contact_us")}
                 <span className="absolute -bottom-2 left-0 w-12 h-0.5 bg-[#FFD700]" />
               </h3>
               <div className="space-y-3">
@@ -170,23 +205,23 @@ const Footer = () => {
           <div className="container mx-auto px-4 py-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
               <p>
-                Copyright © 2024{" "}
+                {t("copyright")} © 2024{" "}
                 <span className="text-[#00D1FF] font-medium">Orouba</span>
               </p>
               <div className="flex items-center gap-6 text-white/70">
-                <Link
+                <I18nLink
                   href="/privacy-policy"
                   className="hover:text-white transition-colors"
                 >
-                  Privacy Policy
-                </Link>
-                <Link
+                  {t("privacy_policy")}
+                </I18nLink>
+                <I18nLink
                   href="/terms"
                   className="hover:text-white transition-colors"
                 >
-                  Terms of Use
-                </Link>
-                <span>All rights reserved</span>
+                  {t("terms_of_use")}
+                </I18nLink>
+                <span>{t("all_rights_reserved")}</span>
               </div>
             </div>
           </div>

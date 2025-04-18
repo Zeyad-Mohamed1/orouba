@@ -4,6 +4,8 @@ export interface NavigationItem {
   dropdownItems?: {
     key: string;
     href: string;
+    label?: string;
+    image?: string | null;
   }[];
 }
 

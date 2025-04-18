@@ -1,0 +1,100 @@
+/* Rich Text Editor - React Quill Customizations */
+.quill-container .ql-container {
+  border-radius: 0 0 0.375rem 0.375rem;
+  background-color: white;
+  font-family: inherit;
+  font-size: 0.875rem;
+  min-height: 150px;
+}
+
+.quill-container .ql-toolbar {
+  border-radius: 0.375rem 0.375rem 0 0;
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.quill-container .ql-editor {
+  min-height: 150px;
+}
+
+.quill-container .ql-editor.ql-blank::before {
+  font-style: normal;
+  color: #9ca3af;
+}
+
+.quill-container.quill-error .ql-toolbar,
+.quill-container.quill-error .ql-container {
+  border-color: #ef4444;
+}
+
+.quill-container .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+  border-color: #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Support RTL text direction in the editor */
+.quill-container.rtl .ql-editor {
+  direction: rtl;
+  text-align: right;
+}
+
+.quill-container.rtl .ql-toolbar button[value="rtl"] {
+  color: #3b82f6;
+}
+
+.quill-container.rtl .ql-toolbar button[value="rtl"] .ql-fill {
+  fill: #3b82f6;
+}
+
+.quill-container.rtl .ql-toolbar button[value="rtl"] .ql-stroke {
+  stroke: #3b82f6;
+}
+
+/* Improve Quill focus styles to match form elements */
+.quill-container .ql-container:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Improve image display in Quill */
+.ql-editor img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+}
+
+/* Dark mode support */
+.dark .quill-container .ql-toolbar {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .quill-container .ql-container {
+  background-color: #111827;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .quill-container .ql-editor.ql-blank::before {
+  color: #6b7280;
+}
+
+/* Make icons and buttons visible in dark mode */
+.dark .quill-container .ql-snow .ql-stroke {
+  stroke: #d1d5db;
+}
+
+.dark .quill-container .ql-snow .ql-fill {
+  fill: #d1d5db;
+}
+
+.dark .quill-container .ql-picker-label {
+  color: #d1d5db;
+}
+
+.dark .quill-container.quill-error .ql-toolbar,
+.dark .quill-container.quill-error .ql-container {
+  border-color: #f87171;
+}

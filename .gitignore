@@ -10,6 +10,11 @@
 !.yarn/releases
 !.yarn/versions
 
+# uploads
+/public/uploads
+/public/upload
+/public/catalog
+
 # testing
 /coverage
 
