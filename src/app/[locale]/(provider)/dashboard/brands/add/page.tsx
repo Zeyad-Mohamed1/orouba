@@ -43,6 +43,7 @@ export default function AddBrandPage() {
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(STEPS.BASIC_INFO);
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name_ar: "",
     name_en: "",
@@ -86,7 +87,10 @@ export default function AddBrandPage() {
 
   // Update rich text editor onChange handlers with proper types
   const handleRichTextChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Create a new copy of the form data to ensure no reference issues
+    const newFormData = { ...formData };
+    newFormData[name as keyof typeof formData] = value;
+    setFormData(newFormData);
 
     // Clear validation error for this field if it exists
     if (validationErrors[name]) {
@@ -205,6 +209,11 @@ export default function AddBrandPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // Prevent multiple submissions
+    if (isSubmitting || isLoading) {
+      return;
+    }
+
     // Final validation before submission
     let isValid = true;
     for (let step = 0; step < STEPS.REVIEW; step++) {
@@ -218,6 +227,7 @@ export default function AddBrandPage() {
     if (!isValid || !hasReviewed) return;
 
     setIsLoading(true);
+    setIsSubmitting(true);
     setError("");
 
     try {
@@ -280,6 +290,7 @@ export default function AddBrandPage() {
         console.error("Error processing files:", fileError);
         setError(t("errors.fileProcessingFailed"));
         setIsLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -310,6 +321,7 @@ export default function AddBrandPage() {
       window.scrollTo(0, 0);
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -330,11 +342,10 @@ export default function AddBrandPage() {
           {steps.map((step, i) => (
             <div key={i} className="flex flex-col items-center">
               <div
-                className={`${
-                  currentStep >= step.index
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-500"
-                } h-8 w-8 rounded-full flex items-center justify-center font-medium text-sm transition-colors`}
+                className={`${currentStep >= step.index
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-500"
+                  } h-8 w-8 rounded-full flex items-center justify-center font-medium text-sm transition-colors`}
               >
                 {currentStep > step.index ? (
                   <Check className="h-4 w-4" />
@@ -416,6 +427,7 @@ export default function AddBrandPage() {
                 onChange={(value) =>
                   handleRichTextChange("description_ar", value)
                 }
+                key="description_ar_editor"
               />
               {validationErrors.description_ar && (
                 <FormHelperText error>
@@ -433,6 +445,7 @@ export default function AddBrandPage() {
                 onChange={(value) =>
                   handleRichTextChange("description_en", value)
                 }
+                key="description_en_editor"
               />
               {validationErrors.description_en && (
                 <FormHelperText error>
@@ -459,6 +472,7 @@ export default function AddBrandPage() {
                 onChange={(value) =>
                   handleRichTextChange("brand_text_ar", value)
                 }
+                key="brand_text_ar_editor"
               />
               {validationErrors.brand_text_ar && (
                 <FormHelperText error>
@@ -476,6 +490,7 @@ export default function AddBrandPage() {
                 onChange={(value) =>
                   handleRichTextChange("brand_text_en", value)
                 }
+                key="brand_text_en_editor"
               />
               {validationErrors.brand_text_en && (
                 <FormHelperText error>
@@ -898,7 +913,7 @@ export default function AddBrandPage() {
         {isLastStep ? (
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isLoading ? (
@@ -918,11 +933,10 @@ export default function AddBrandPage() {
             type="button"
             onClick={handleNextStep}
             disabled={isReviewStep && !hasReviewed}
-            className={`bg-blue-600 hover:bg-blue-700 ${
-              isReviewStep && !hasReviewed
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
+            className={`bg-blue-600 hover:bg-blue-700 ${isReviewStep && !hasReviewed
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+              }`}
           >
             {t("steps.next")}
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -954,6 +968,7 @@ export default function AddBrandPage() {
       <form
         onSubmit={handleSubmit}
         className="max-w-4xl mb-10 mx-auto space-y-2"
+        noValidate
       >
         {renderStepIndicator()}
         {renderStepContent()}

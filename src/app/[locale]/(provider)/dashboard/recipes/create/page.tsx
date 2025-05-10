@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Plus, Minus, X } from "lucide-react";
 import Link from "next/link";
 import FileUpload from "@/components/shared/FileUpload";
 import { uploadFile } from "@/lib/imageUpload";
+import { v4 as uuidv4 } from "uuid";
 
 interface Dish {
   id: number;
@@ -41,10 +42,10 @@ export default function CreateRecipePage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { id: crypto.randomUUID(), text_ar: "", text_en: "" },
+    { id: uuidv4(), text_ar: "", text_en: "" },
   ]);
   const [instructions, setInstructions] = useState<Instruction[]>([
-    { id: crypto.randomUUID(), text_ar: "", text_en: "" },
+    { id: uuidv4(), text_ar: "", text_en: "" },
   ]);
 
   const [formData, setFormData] = useState({
@@ -126,7 +127,7 @@ export default function CreateRecipePage() {
   const addIngredient = () => {
     setIngredients([
       ...ingredients,
-      { id: crypto.randomUUID(), text_ar: "", text_en: "" },
+      { id: uuidv4(), text_ar: "", text_en: "" },
     ]);
   };
 
@@ -139,7 +140,7 @@ export default function CreateRecipePage() {
   const addInstruction = () => {
     setInstructions([
       ...instructions,
-      { id: crypto.randomUUID(), text_ar: "", text_en: "" },
+      { id: uuidv4(), text_ar: "", text_en: "" },
     ]);
   };
 
@@ -267,8 +268,8 @@ export default function CreateRecipePage() {
                       ? "جاري التحميل..."
                       : "Loading..."
                     : locale === "ar"
-                    ? "اختر الأطباق"
-                    : "Select Dishes"}
+                      ? "اختر الأطباق"
+                      : "Select Dishes"}
                 </option>
                 {dishes.map((dish) => (
                   <option key={dish.id} value={dish.id}>
@@ -300,8 +301,8 @@ export default function CreateRecipePage() {
                       ? "جاري التحميل..."
                       : "Loading..."
                     : locale === "ar"
-                    ? "اختر المنتج (اختياري)"
-                    : "Select Product (Optional)"}
+                      ? "اختر المنتج (اختياري)"
+                      : "Select Product (Optional)"}
                 </option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
@@ -596,11 +597,10 @@ export default function CreateRecipePage() {
             <button
               type="submit"
               disabled={isSubmitting || isLoadingData}
-              className={`inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${
-                isSubmitting || isLoadingData
+              className={`inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${isSubmitting || isLoadingData
                   ? "opacity-50 cursor-not-allowed"
                   : ""
-              }`}
+                }`}
             >
               {isSubmitting ? (
                 <>
