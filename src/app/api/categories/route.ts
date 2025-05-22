@@ -1,19 +1,5 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
-
-// Helper function to ensure directory exists
-async function ensureDirectoryExists(dirPath: string) {
-  try {
-    await fs.promises.access(dirPath);
-  } catch (error) {
-    // Directory doesn't exist, create it
-    await mkdir(dirPath, { recursive: true });
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,56 +37,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    // Save image file
-    let image_path = null;
+    // Convert image to base64
+    let image_base64 = null;
     if (image) {
-      // Define upload directory
-      const uploadDir = path.join(
-        process.cwd(),
-        "public",
-        "uploads",
-        "categories"
-      );
-
-      // Ensure upload directory exists
-      await ensureDirectoryExists(uploadDir);
-
-      // Helper function to get file extension from mime type
-      const getExtensionFromMimeType = (file: File): string => {
-        const type = file.type;
-        switch (type) {
-          case "image/jpeg":
-            return "jpg";
-          case "image/png":
-            return "png";
-          case "image/gif":
-            return "gif";
-          case "image/webp":
-            return "webp";
-          default:
-            return file.name.includes(".")
-              ? file.name
-                  .split(".")
-                  .pop()
-                  ?.replace(/[^a-zA-Z0-9]/g, "") || "jpg"
-              : "jpg";
-        }
-      };
-
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
-      // Generate unique filename with proper extension
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(image);
-      const filename = `category_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Write file to the server
-      await writeFile(filepath, buffer);
-
-      // Store the public URL path
-      image_path = `/uploads/categories/${filename}`;
+      image_base64 = `data:${image.type};base64,${buffer.toString('base64')}`;
     }
 
     // Create the category in the database
@@ -110,7 +52,7 @@ export async function POST(request: NextRequest) {
         name_en,
         description_ar,
         description_en,
-        image: image_path!,
+        image: image_base64!,
         brand_id: brandId,
       },
       include: {

@@ -1,3 +1,6 @@
+"use server";
+import prisma from "@/lib/prisma";
+
 export interface Category {
   id: number;
   name_ar: string;
@@ -26,27 +29,25 @@ export async function getBrandData(brandId: string): Promise<{
   error: string | null;
 }> {
   try {
-    // Fetch brand details with related categories
-    const response = await fetch(
-      `${
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
-      }/api/brands/${brandId}`,
-      {
-        cache: "no-store", // This ensures fresh data on each request
-      }
-    );
+    const response = await prisma.brand.findUnique({
+      where: {
+        id: parseInt(brandId),
+      },
+      include: {
+        categories: true,
+      },
+    });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch brand details: ${response.status}`);
+    if (!response) {
+      throw new Error(`Failed to fetch brand details`);
     }
 
-    const data = await response.json();
     return {
-      brand: data.brand,
+      brand: response as any,
       error: null,
     };
   } catch (err) {
-    console.error("Error fetching brand data:", err);
+    console.error("Error fetching brand data:::", err);
     return {
       brand: null,
       error:

@@ -45,9 +45,8 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body
-        className={`${
-          locale === "en" ? amaranth.className : balooBhaijaan2.className
-        } antialiased bg-gray-50`}
+        className={`${locale === "en" ? amaranth.className : balooBhaijaan2.className
+          } antialiased bg-gray-50`}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Toaster position={locale === "en" ? "top-right" : "top-left"} />

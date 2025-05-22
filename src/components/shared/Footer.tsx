@@ -32,7 +32,7 @@ const Footer = () => {
       try {
         const response = await fetch(`/api/brands?locale=${locale}`);
         const data = await response.json();
-        setBrands(data.brands);
+        setBrands(data);
       } catch (error) {
         console.error("Failed to fetch brands:", error);
         // Fallback to default brands if API fails

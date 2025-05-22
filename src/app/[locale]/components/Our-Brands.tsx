@@ -58,7 +58,7 @@ const OurBrands = () => {
           throw new Error("Failed to fetch brands");
         }
         const data = await response.json();
-        setBrands(data.brands);
+        setBrands(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch brands");
       } finally {

@@ -1,28 +1,67 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import {
-  deleteImageFile,
-  ensureDirectoryExists,
-  getExtensionFromMimeType,
-} from "@/lib/fileUtils";
+
+interface BrandUpdateData {
+  name_ar: string;
+  name_en: string;
+  description_ar: string;
+  description_en: string;
+  brand_text_ar: string;
+  brand_text_en: string;
+  color: string;
+  main_image?: string;
+  banner?: string;
+  small_img?: string;
+}
+
+interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+const validateBrandData = (data: Partial<BrandUpdateData>): string | null => {
+  const requiredFields: (keyof BrandUpdateData)[] = [
+    'name_ar',
+    'name_en',
+    'description_ar',
+    'description_en',
+    'brand_text_ar',
+    'brand_text_en',
+    'color'
+  ];
+
+  for (const field of requiredFields) {
+    if (!data[field]) {
+      return `Missing required field: ${field}`;
+    }
+  }
+  return null;
+};
+
+// const convertFileToBase64 = async (file: File | null): Promise<string | null> => {
+//   if (!file || file.size === 0) return null;
+
+//   const bytes = await file.arrayBuffer();
+//   const buffer = Buffer.from(bytes);
+//   const base64 = buffer.toString('base64');
+//   const mimeType = file.type;
+//   return `data:${mimeType};base64,${base64}`;
+// };
 
 // Get a specific brand by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse<ApiResponse<any>>> {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
-    if (isNaN(id)) {
+      const { id } = await params;
+    if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const brand = await prisma.brand.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
       include: {
         categories: {
           orderBy: {
@@ -36,7 +75,7 @@ export async function GET(
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ brand });
+    return NextResponse.json({ data: brand });
   } catch (error) {
     console.error("Error fetching brand:", error);
     return NextResponse.json(
@@ -50,131 +89,50 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse<ApiResponse<any>>> {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
-    // Check if brand exists
     const existingBrand = await prisma.brand.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingBrand) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    // Process FormData
-    const formData = await request.formData();
-
-    // Extract brand data from the form data
-    const name_ar = formData.get("name_ar") as string;
-    const name_en = formData.get("name_en") as string;
-    const description_ar = formData.get("description_ar") as string;
-    const description_en = formData.get("description_en") as string;
-    const brand_text_ar = formData.get("brand_text_ar") as string;
-    const brand_text_en = formData.get("brand_text_en") as string;
-    const color = formData.get("color") as string;
-
-    // File uploads
-    const main_image = formData.get("main_image") as File | null;
-    const banner = formData.get("banner") as File | null;
-    const small_img = formData.get("small_img") as File | null;
-
-    // Validate required fields
-    if (
-      !name_ar ||
-      !name_en ||
-      !description_ar ||
-      !description_en ||
-      !brand_text_ar ||
-      !brand_text_en ||
-      !color
-    ) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Data to update
-    const updateData: any = {
-      name_ar,
-      name_en,
-      description_ar,
-      description_en,
-      brand_text_ar,
-      brand_text_en,
-      color,
+    const body = await request.json();
+    const brandData: Partial<BrandUpdateData> = {
+      name_ar: body.name_ar,
+      name_en: body.name_en,
+      description_ar: body.description_ar,
+      description_en: body.description_en,
+      brand_text_ar: body.brand_text_ar,
+      brand_text_en: body.brand_text_en,
+      color: body.color,
     };
 
-    // Define upload directory
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "brands");
-
-    // Ensure upload directory exists
-    await ensureDirectoryExists(uploadDir);
-
-    // Save main_image if provided
-    if (main_image && main_image.size > 0) {
-      // Delete existing main_image if it exists
-      await deleteImageFile(existingBrand.main_image);
-
-      const bytes = await main_image.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(main_image);
-      const filename = `main_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      await writeFile(filepath, buffer);
-      updateData.main_image = `/uploads/brands/${filename}`;
+    const validationError = validateBrandData(brandData);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    // Save banner if provided
-    if (banner && banner.size > 0) {
-      // Delete existing banner if it exists
-      await deleteImageFile(existingBrand.banner);
+    const updateData: BrandUpdateData = {
+      ...brandData as BrandUpdateData,
+      ...(body.main_image && { main_image: body.main_image }),
+      ...(body.banner && { banner: body.banner }),
+      ...(body.small_img && { small_img: body.small_img }),
+    };
 
-      const bytes = await banner.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(banner);
-      const filename = `banner_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      await writeFile(filepath, buffer);
-      updateData.banner = `/uploads/brands/${filename}`;
-    }
-
-    // Save small_img if provided
-    if (small_img && small_img.size > 0) {
-      // Delete existing small_img if it exists
-      await deleteImageFile(existingBrand.small_img);
-
-      const bytes = await small_img.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(small_img);
-      const filename = `small_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      await writeFile(filepath, buffer);
-      updateData.small_img = `/uploads/brands/${filename}`;
-    }
-
-    // Update the brand in the database
     const updatedBrand = await prisma.brand.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: updateData,
     });
 
-    return NextResponse.json({ brand: updatedBrand }, { status: 200 });
+    return NextResponse.json({ data: updatedBrand });
   } catch (error) {
     console.error("Error updating brand:", error);
     return NextResponse.json(
@@ -188,31 +146,23 @@ export async function PUT(
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse<ApiResponse<void>>> {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
-    // Check if brand exists
     const existingBrand = await prisma.brand.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingBrand) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    // Delete associated images
-    await deleteImageFile(existingBrand.main_image);
-    await deleteImageFile(existingBrand.banner);
-    await deleteImageFile(existingBrand.small_img);
-
-    // Delete the brand
     await prisma.brand.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json({ message: "Brand deleted successfully" });
@@ -223,4 +173,13 @@ export async function DELETE(
       { status: 500 }
     );
   }
+}
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+    responseLimit: '10mb',
+  },
 }

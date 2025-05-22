@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { deleteImageFile } from "@/lib/fileUtils";
 
 // GET /api/recipes/[id] - Get a single recipe by ID
 export async function GET(
@@ -8,16 +7,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
+    const { id } = await params;
 
-    if (isNaN(id)) {
+    if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: "Invalid recipe ID" }, { status: 400 });
     }
 
     const recipe = await prisma.recipe.findUnique({
       where: {
-        id,
+        id: parseInt(id),
       },
       include: {
         dish: {
@@ -59,17 +57,16 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
+    const { id } = await params;
     const body = await request.json();
 
-    if (isNaN(id)) {
+    if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: "Invalid recipe ID" }, { status: 400 });
     }
 
     // Check if recipe exists
     const existingRecipe = await prisma.recipe.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingRecipe) {
@@ -84,22 +81,23 @@ export async function PUT(
       ? body.instructions
       : existingRecipe.instructions;
 
-    // Delete old image file if exists and a new image is provided
-    if (existingRecipe.image && body.image) {
-      await deleteImageFile(existingRecipe.image);
+    let image_base64 = null;
+    if (body.image) {
+      const bytes = await body.image.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      image_base64 = `data:${body.image.type};base64,${buffer.toString('base64')}`;
     }
 
     const recipe = await prisma.recipe.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         level: body.level || existingRecipe.level,
         prep_time: body.prep_time || existingRecipe.prep_time,
         cooking_time: body.cooking_time || existingRecipe.cooking_time,
         servings: body.servings || existingRecipe.servings,
-        image: body.image !== undefined ? body.image : existingRecipe.image,
+        image: image_base64 || null,
         ingredients,
         instructions,
-        // Update dish if provided
         ...(body.dish_id && {
           dish: {
             connect: {
@@ -107,7 +105,6 @@ export async function PUT(
             },
           },
         }),
-        // Update product if provided
         ...(body.product_id && {
           product: {
             connect: {
@@ -115,7 +112,6 @@ export async function PUT(
             },
           },
         }),
-        // Remove product connection if explicitly set to null
         ...(body.product_id === null && {
           product: {
             disconnect: true,
@@ -144,29 +140,23 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
+    const { id } = await params;
 
-    if (isNaN(id)) {
+    if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: "Invalid recipe ID" }, { status: 400 });
     }
 
     // Check if recipe exists
     const existingRecipe = await prisma.recipe.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingRecipe) {
       return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
     }
 
-    // Delete the image file if it exists
-    if (existingRecipe.image) {
-      await deleteImageFile(existingRecipe.image);
-    }
-
     await prisma.recipe.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json(

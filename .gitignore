@@ -11,9 +11,9 @@
 !.yarn/versions
 
 # uploads
-/public/uploads
-/public/upload
-/public/catalog
+# /public/uploads
+# /public/upload
+# /public/catalog
 
 # testing
 /coverage

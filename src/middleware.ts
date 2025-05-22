@@ -5,15 +5,6 @@ import type { NextRequest } from "next/server";
 
 type Locale = (typeof routing.locales)[number];
 
-// Extend NextRequest to include nextauth
-interface RequestWithAuth extends NextRequest {
-  nextauth: {
-    token: {
-      role?: string;
-    } | null;
-  };
-}
-
 // Middleware function to handle locale redirection
 function localeMiddleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
@@ -55,44 +46,48 @@ function localeMiddleware(req: NextRequest) {
   );
 }
 
-// Middleware function to handle authentication for dashboard routes
-function authMiddleware(req: RequestWithAuth) {
-  const { pathname } = req.nextUrl;
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl;
 
-  // Only apply auth check for dashboard routes
-  if (pathname.startsWith("/dashboard")) {
-    const token = req.nextauth.token;
-    const isAdmin = token?.role === "admin";
+    // Handle locale redirection first
+    const localeResponse = localeMiddleware(req);
+    if (localeResponse.status !== 200) return localeResponse;
 
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL("/auth/signin", req.url));
-    }
-  }
-
-  return NextResponse.next();
-}
-
-// Combined middleware for both auth and locale
-const combinedMiddleware = async (req: RequestWithAuth) => {
-  // First handle locale redirection
-  const localeResponse = localeMiddleware(req);
-  if (localeResponse.status !== 200) return localeResponse;
-
-  // Then handle auth for dashboard routes only
-  return authMiddleware(req);
-};
-
-export default withAuth(combinedMiddleware, {
-  callbacks: {
-    authorized: ({ req, token }) => {
-      // Only require authentication for dashboard routes
-      if (req.nextUrl.pathname.startsWith("/dashboard")) {
-        return !!token;
+    // Handle dashboard routes
+    if (pathname.startsWith("/dashboard")) {
+      const token = req.nextauth.token;
+      
+      // Check if user is authenticated
+      if (!token) {
+        const callbackUrl = encodeURIComponent(req.url);
+        return NextResponse.redirect(new URL(`/auth/signin?callbackUrl=${callbackUrl}`, req.url));
       }
-      return true;
-    },
+
+      // Check for admin role if needed
+      if (pathname.startsWith("/dashboard/admin") && token.role !== "admin") {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    }
+
+    return NextResponse.next();
   },
-});
+  {
+    callbacks: {
+      authorized: ({ req, token }) => {
+        // Only require authentication for dashboard routes
+        if (req.nextUrl.pathname.startsWith("/dashboard")) {
+          return !!token;
+        }
+        return true;
+      },
+    },
+    pages: {
+      signIn: '/auth/signin',
+    },
+    secret: process.env.NEXTAUTH_SECRET,
+  }
+);
 
 export const config = {
   matcher: [

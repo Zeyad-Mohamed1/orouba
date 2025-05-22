@@ -68,7 +68,12 @@ export async function POST(request: Request) {
 
     // Get image file if exists
     const imageFile = formData.get("image") as File | null;
-    let imagePath = "";
+    let image_base64 = null;
+    if (imageFile) {
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      image_base64 = `data:${imageFile.type};base64,${buffer.toString('base64')}`;
+    }
 
     // Validate required fields
     if (
@@ -84,51 +89,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Define upload directory for products
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-
-    // Ensure upload directory exists
-    await ensureDirectoryExists(uploadDir);
-
-    // Helper function to get file extension from mime type
-    const getExtensionFromMimeType = (file: File): string => {
-      const type = file.type;
-      switch (type) {
-        case "image/jpeg":
-          return "jpg";
-        case "image/png":
-          return "png";
-        case "image/gif":
-          return "gif";
-        case "image/webp":
-          return "webp";
-        default:
-          return file.name.includes(".")
-            ? file.name
-                .split(".")
-                .pop()
-                ?.replace(/[^a-zA-Z0-9]/g, "") || "jpg"
-            : "jpg";
-      }
-    };
-
-    // Save image if provided
-    if (imageFile) {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Generate unique filename with proper extension
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(imageFile);
-      const filename = `product_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Write file to the server
-      await writeFile(filepath, buffer);
-
-      // Store the public URL path
-      imagePath = `/uploads/products/${filename}`;
-    }
 
     // Create the product
     const product = await prisma.product.create({
@@ -138,7 +98,7 @@ export async function POST(request: Request) {
         description_ar,
         description_en,
         color,
-        image: imagePath,
+        image: image_base64 || "",
         category_id: parseInt(category_id),
       },
     });

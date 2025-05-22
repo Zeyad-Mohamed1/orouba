@@ -73,9 +73,11 @@ export async function PUT(
       );
     }
 
-    // Delete old image file if exists and a new image is provided
-    if (body.image !== undefined && existingDish.image) {
-      await deleteImageFile(existingDish.image);
+    let image_base64 = null;
+    if (body.image) {
+      const bytes = await body.image.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      image_base64 = `data:${body.image.type};base64,${buffer.toString('base64')}`;
     }
 
     const dish = await prisma.dish.update({
@@ -83,7 +85,7 @@ export async function PUT(
       data: {
         name_en: body.name_en,
         name_ar: body.name_ar,
-        image: body.image !== undefined ? body.image : existingDish.image,
+        image: image_base64 || null,
         dishCategory: {
           connect: {
             id: body.dishCategory_id,

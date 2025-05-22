@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, Users } from "lucide-react";
@@ -34,21 +35,7 @@ export function RelatedRecipes({ recipes, locale }: RelatedRecipesProps) {
                   }
                   fill
                   style={{ objectFit: "cover" }}
-                  unoptimized={true}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      parent.classList.add(
-                        "flex",
-                        "items-center",
-                        "justify-center",
-                        "bg-gray-100"
-                      );
-                      parent.innerHTML =
-                        '<span class="text-gray-500">No image</span>';
-                    }
-                  }}
+
                 />
               </div>
             ) : (

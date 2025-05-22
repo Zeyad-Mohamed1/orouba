@@ -317,7 +317,13 @@
       "numberedList": "Numbered List",
       "heading": "Heading",
       "link": "Link"
-    }
+    },
+    "updating": "Updating...",
+    "updateBrand": "Update Brand",
+    "fetchFailed": "Failed to fetch brand data",
+    "fileTooLarge": "File size must be less than 10MB",
+    "unsupportedFileType": "Unsupported file type. Please upload an image or video file",
+    "fileProcessingError": "Failed to process the uploaded file"
   },
   "categories": {
     "title": "Categories",

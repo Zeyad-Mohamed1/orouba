@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+
 interface Brand {
   id: number;
   name_ar: string;
@@ -25,12 +26,14 @@ const BrandsPage = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const response = await fetch("/api/brands");
+        const response = await fetch("/api/brands", {
+          cache: "no-store",
+        });
         if (!response.ok) {
           throw new Error(t("loadingError"));
         }
         const data = await response.json();
-        setBrands(data.brands);
+        setBrands(data);
       } catch (err) {
         console.error("Error fetching brands:", err);
         setError(t("loadingError"));
@@ -41,6 +44,8 @@ const BrandsPage = () => {
 
     fetchBrands();
   }, [t]);
+
+  console.log("brands", brands);
 
   const handleDelete = async (id: number) => {
     if (!confirm(t("confirmDelete"))) return;
@@ -84,7 +89,7 @@ const BrandsPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           <span className="sr-only">{t("loading")}</span>
         </div>
-      ) : brands.length === 0 ? (
+      ) : brands?.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
           <p className="mb-4">{t("noBrands")}</p>
           <Link
@@ -96,7 +101,7 @@ const BrandsPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {brands.map((brand) => (
+          {brands?.map((brand) => (
             <div
               key={brand.id}
               className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"

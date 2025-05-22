@@ -40,11 +40,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate base64 image if provided
+    let image_base64 = null;
+    if (body.image) {
+      const bytes = await body.image.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      image_base64 = `data:${body.image.type};base64,${buffer.toString('base64')}`;
+    }
+
     const dishCategory = await prisma.dishCategory.create({
       data: {
         name_ar: body.name_ar,
         name_en: body.name_en,
-        image: body.image || null,
+        image: image_base64 || null,
       },
     });
 

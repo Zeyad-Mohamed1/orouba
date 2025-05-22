@@ -2,8 +2,8 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 
 async function main() {
-  const email = "admin@orouba.com"; // Change this to your desired admin email
-  const password = "orouba@123"; // Change this to your desired password
+  const email = "admin@orouba.com";
+  const password = "orouba@123";
 
   const hashedPassword = await bcrypt.hash(password, 12);
 

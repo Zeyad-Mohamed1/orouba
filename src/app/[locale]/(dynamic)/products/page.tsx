@@ -52,16 +52,13 @@ export async function generateMetadata(
 // Create a server-side fetch function for brands
 async function getBrandData(brandId: string) {
   try {
-    // Update URL to ensure it's absolute - if testing locally, consider hardcoding full URL
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     const url = `${apiUrl}/api/brands/${brandId}`;
 
     const response = await fetch(url, {
-      next: { revalidate: 3600 }, // Revalidate every hour
-      cache: "force-cache", // Use cache with revalidation
+      next: { revalidate: 3600 },
+      cache: "force-cache",
     });
 
     if (!response.ok) {
@@ -88,9 +85,7 @@ async function getBrandData(brandId: string) {
 // Create a server-side fetch function for products
 async function getProducts(categoryId: string | null, brandId: string | null) {
   try {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     let url = `${apiUrl}/api/products`;
 

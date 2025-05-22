@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
 export default function SignIn() {
   const locale = useLocale();
   const t = useTranslations("auth.signin");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,16 +29,23 @@ export default function SignIn() {
         email,
         password,
         redirect: false,
+        callbackUrl: searchParams.get("callbackUrl") || `/${locale}/dashboard`,
       });
+
+      console.log("Sign in result:", result);
 
       if (result?.error) {
         setError(result.error);
-      } else {
-        router.push(`/${locale}/dashboard`);
+      } else if (result?.ok) {
+        // Use the callbackUrl from the result or fallback to dashboard
+        const callbackUrl = result.url || `/${locale}/dashboard`;
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (error) {
+      console.error("Sign in error:", error);
       setError(t("errors.default"));
+      toast.error(t("errors.default"));
     } finally {
       setIsLoading(false);
     }
@@ -134,9 +143,8 @@ export default function SignIn() {
                 {isLoading ? (
                   <span className="flex items-center">
                     <svg
-                      className={`animate-spin ${
-                        locale === "ar" ? "ml-3 -mr-1" : "-ml-1 mr-3"
-                      } h-5 w-5 text-white`}
+                      className={`animate-spin ${locale === "ar" ? "ml-3 -mr-1" : "-ml-1 mr-3"
+                        } h-5 w-5 text-white`}
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"

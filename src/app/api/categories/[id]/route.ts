@@ -1,22 +1,13 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import {
-  deleteImageFile,
-  ensureDirectoryExists,
-  getExtensionFromMimeType,
-} from "@/lib/fileUtils";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const param = await params;
-    const id = parseInt(param.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    if (isNaN(parseInt(id))) {
       return NextResponse.json(
         { error: "Invalid category ID" },
         { status: 400 }
@@ -24,7 +15,7 @@ export async function GET(
     }
 
     const category = await prisma.category.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
       include: {
         brand: {
           select: {
@@ -58,8 +49,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    if (isNaN(parseInt(id))) {
       return NextResponse.json(
         { error: "Invalid category ID" },
         { status: 400 }
@@ -68,7 +59,7 @@ export async function PUT(
 
     // Check if category exists
     const existingCategory = await prisma.category.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingCategory) {
@@ -123,41 +114,15 @@ export async function PUT(
 
     // Process new image if provided
     if (image) {
-      // Define upload directory
-      const uploadDir = path.join(
-        process.cwd(),
-        "public",
-        "uploads",
-        "categories"
-      );
-
-      // Ensure upload directory exists
-      await ensureDirectoryExists(uploadDir);
-
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
-      // Generate unique filename with proper extension
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(image);
-      const filename = `category_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Write file to the server
-      await writeFile(filepath, buffer);
-
-      // Delete old image file if exists
-      if (existingCategory.image) {
-        await deleteImageFile(existingCategory.image);
-      }
-
-      // Update image path
-      updateData.image = `/uploads/categories/${filename}`;
+      const base64Image = `data:${image.type};base64,${buffer.toString('base64')}`;
+      updateData.image = base64Image;
     }
 
     // Update the category in the database
     const updatedCategory = await prisma.category.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: updateData,
       include: {
         brand: {
@@ -185,8 +150,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    if (isNaN(parseInt(id))) {
       return NextResponse.json(
         { error: "Invalid category ID" },
         { status: 400 }
@@ -195,7 +160,7 @@ export async function DELETE(
 
     // Find the category to get the image path before deletion
     const category = await prisma.category.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!category) {
@@ -207,7 +172,7 @@ export async function DELETE(
 
     // Check if there are products associated with this category
     const productsCount = await prisma.product.count({
-      where: { category_id: id },
+      where: { category_id: parseInt(id) },
     });
 
     if (productsCount > 0) {
@@ -220,14 +185,9 @@ export async function DELETE(
       );
     }
 
-    // Delete the image file if it exists
-    if (category.image) {
-      await deleteImageFile(category.image);
-    }
-
     // Delete the category
     await prisma.category.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json(

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import PageHeader from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, AlertCircle } from "lucide-react";
+import Image from "next/image";
 
 interface Brand {
   id: number;
@@ -40,7 +41,7 @@ export default function BrandDetailPage() {
           throw new Error(t("loadingError"));
         }
         const data = await response.json();
-        setBrand(data.brand);
+        setBrand(data?.data);
       } catch (err) {
         console.error("Error fetching brand:", err);
         setError(t("loadingError"));
@@ -243,10 +244,12 @@ export default function BrandDetailPage() {
                   <h3 className="text-sm font-medium text-gray-500 mb-2">
                     {t("mainImage")}
                   </h3>
-                  <img
+                  <Image
                     src={brand.main_image}
                     alt={brand.name_en}
                     className="w-full h-auto rounded-md"
+                    width={1000}
+                    height={1000}
                   />
                 </div>
               )}
@@ -256,10 +259,12 @@ export default function BrandDetailPage() {
                   <h3 className="text-sm font-medium text-gray-500 mb-2">
                     {t("smallImage")}
                   </h3>
-                  <img
+                  <Image
                     src={brand.small_img}
                     alt={`${brand.name_en} ${t("small")}`}
                     className="w-full h-auto rounded-md"
+                    width={1000}
+                    height={1000}
                   />
                 </div>
               )}
@@ -270,7 +275,7 @@ export default function BrandDetailPage() {
                     {t("banner")}
                   </h3>
                   {brand.banner.endsWith(".mp4") ||
-                  brand.banner.includes("/video/") ? (
+                    brand.banner.includes("/video/") ? (
                     <video
                       src={brand.banner}
                       controls
@@ -278,10 +283,12 @@ export default function BrandDetailPage() {
                       aria-label={`${brand.name_en} ${t("bannerVideo")}`}
                     />
                   ) : (
-                    <img
+                    <Image
                       src={brand.banner}
                       alt={`${brand.name_en} ${t("bannerImage")}`}
                       className="w-full h-auto rounded-md"
+                      width={1000}
+                      height={1000}
                     />
                   )}
                 </div>

@@ -95,9 +95,11 @@ export async function PUT(
     // Get image file if exists
     const imageFile = formData.get("image") as File | null;
 
-    // Delete old image file if exists and a new image is provided
-    if (existingProduct.image && imageFile) {
-      await deleteImageFile(existingProduct.image);
+    let image_base64 = null;
+    if (imageFile) {
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      image_base64 = `data:${imageFile.type};base64,${buffer.toString('base64')}`;
     }
 
     // Data to update
@@ -124,60 +126,18 @@ export async function PUT(
       );
     }
 
-    // Define upload directory for products
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-
-    // Ensure upload directory exists
-    await ensureDirectoryExists(uploadDir);
-
-    // Helper function to get file extension from mime type
-    const getExtensionFromMimeType = (file: File): string => {
-      const type = file.type;
-      switch (type) {
-        case "image/jpeg":
-          return "jpg";
-        case "image/png":
-          return "png";
-        case "image/gif":
-          return "gif";
-        case "image/webp":
-          return "webp";
-        default:
-          return file.name.includes(".")
-            ? file.name
-                .split(".")
-                .pop()
-                ?.replace(/[^a-zA-Z0-9]/g, "") || "jpg"
-            : "jpg";
-      }
-    };
-
-    // Save image if provided as a file
-    if (imageFile && typeof imageFile !== "string" && imageFile.size > 0) {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Generate unique filename with proper extension
-      const uniqueId = uuidv4();
-      const extension = getExtensionFromMimeType(imageFile);
-      const filename = `product_${uniqueId}.${extension}`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Write file to the server
-      await writeFile(filepath, buffer);
-
-      // Store the public URL path
-      updateData.image = `/uploads/products/${filename}`;
-    }
-    // If image is provided as a string (existing image path)
-    else if (imageFile && typeof imageFile === "string") {
-      updateData.image = imageFile;
-    }
-
     // Update product
     const product = await prisma.product.update({
       where: { id: parseInt(id) },
-      data: updateData,
+      data: {
+        name_ar,
+        name_en,
+        description_ar,
+        description_en,
+        color,
+        image: image_base64 || "",
+        category_id,
+      },
     });
 
     return NextResponse.json(product);

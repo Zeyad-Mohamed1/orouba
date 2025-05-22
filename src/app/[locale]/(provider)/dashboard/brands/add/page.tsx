@@ -25,8 +25,9 @@ import {
   Save,
 } from "lucide-react";
 import Editor from "@/components/ui/mdx-editor";
+import axios from "axios"
+import toast from "react-hot-toast";
 
-// Define steps for the form
 const STEPS = {
   BASIC_INFO: 0,
   CONTENT: 1,
@@ -36,6 +37,22 @@ const STEPS = {
   CONFIRM: 5,
 };
 
+interface FormData {
+  name_ar: string;
+  name_en: string;
+  description_ar: string;
+  description_en: string;
+  brand_text_ar: string;
+  brand_text_en: string;
+  color: string;
+  main_image: File | null;
+  banner: File | null;
+  small_img: File | null;
+  main_image_preview?: string;
+  banner_preview?: string;
+  small_img_preview?: string;
+}
+
 export default function AddBrandPage() {
   const router = useRouter();
   const t = useTranslations("brands");
@@ -44,7 +61,7 @@ export default function AddBrandPage() {
   const [currentStep, setCurrentStep] = useState(STEPS.BASIC_INFO);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name_ar: "",
     name_en: "",
     description_ar: "",
@@ -52,9 +69,9 @@ export default function AddBrandPage() {
     brand_text_ar: "",
     brand_text_en: "",
     color: "#3B82F6",
-    main_image: "",
-    banner: "",
-    small_img: "",
+    main_image: null,
+    banner: null,
+    small_img: null,
   });
 
   const [validationErrors, setValidationErrors] = useState<
@@ -89,7 +106,7 @@ export default function AddBrandPage() {
   const handleRichTextChange = (name: string, value: string) => {
     // Create a new copy of the form data to ensure no reference issues
     const newFormData = { ...formData };
-    newFormData[name as keyof typeof formData] = value;
+    newFormData[name as keyof typeof formData] = value as any;
     setFormData(newFormData);
 
     // Clear validation error for this field if it exists
@@ -107,15 +124,139 @@ export default function AddBrandPage() {
     }
   };
 
+  // Helper function to compress image
+  const compressImage = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions while maintaining aspect ratio
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with reduced quality
+          const base64 = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(base64);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  // Helper function to compress video
+  const compressVideo = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const video = document.createElement('video');
+        video.src = event.target?.result as string;
+        video.onloadedmetadata = () => {
+          // Create a canvas with reduced dimensions
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 640;
+          const MAX_HEIGHT = 360;
+
+          let width = video.videoWidth;
+          let height = video.videoHeight;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw video frame to canvas
+          const ctx = canvas.getContext('2d');
+          video.currentTime = 0;
+          video.onseeked = () => {
+            ctx?.drawImage(video, 0, 0, width, height);
+            const base64 = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(base64);
+          };
+        };
+        video.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
   // Update file input onChange handlers with proper types
-  const handleFileChange = (
+  const handleFileChange = async (
     name: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const fileUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({ ...prev, [name]: fileUrl }));
+      const maxSize = 10 * 1024 * 1024; // 10MB limit
+      if (file.size > maxSize) {
+        setError(t("errors.fileTooLarge"));
+        e.target.value = "";
+        return;
+      }
+
+      try {
+        let base64String: string;
+
+        // Handle different file types
+        if (file.type.startsWith('image/')) {
+          base64String = await compressImage(file);
+        } else if (file.type.startsWith('video/')) {
+          base64String = await compressVideo(file);
+        } else {
+          throw new Error(t("errors.unsupportedFileType"));
+        }
+
+        // Create a preview URL for the UI
+        const previewUrl = URL.createObjectURL(file);
+
+        // Update form data with both base64 and preview
+        setFormData((prev) => ({
+          ...prev,
+          [name]: base64String,
+          [`${name}_preview`]: previewUrl
+        }));
+
+      } catch (error) {
+        console.error("Error processing file:", error);
+        setError(t("errors.fileProcessingError"));
+        e.target.value = "";
+      }
     }
   };
 
@@ -231,93 +372,47 @@ export default function AddBrandPage() {
     setError("");
 
     try {
-      // Create FormData object for file uploads
-      const formDataToSend = new FormData();
+      // Create the request payload
+      const payload = {
+        name_ar: formData.name_ar,
+        name_en: formData.name_en,
+        description_ar: formData.description_ar,
+        description_en: formData.description_en,
+        brand_text_ar: formData.brand_text_ar,
+        brand_text_en: formData.brand_text_en,
+        color: formData.color,
+        main_image: formData.main_image,
+        banner: formData.banner,
+        small_img: formData.small_img,
+      };
 
-      // Add text fields
-      formDataToSend.append("name_ar", formData.name_ar);
-      formDataToSend.append("name_en", formData.name_en);
-      formDataToSend.append("description_ar", formData.description_ar);
-      formDataToSend.append("description_en", formData.description_en);
-      formDataToSend.append("brand_text_ar", formData.brand_text_ar);
-      formDataToSend.append("brand_text_en", formData.brand_text_en);
-      formDataToSend.append("color", formData.color);
+      console.log("Sending request to /api/brands...");
 
-      // Handle file uploads
-      try {
-        // For main_image and small_img, we need to fetch the blobs from the URLs
-        if (formData.main_image) {
-          const mainImageResponse = await fetch(formData.main_image);
-          if (!mainImageResponse.ok)
-            throw new Error("Failed to fetch main image");
-
-          const mainImageBlob = await mainImageResponse.blob();
-          const mainImageExt =
-            formData.main_image.split("?")[0].split(".").pop() || "jpg";
-          formDataToSend.append(
-            "main_image",
-            mainImageBlob,
-            `main_image.${mainImageExt}`
-          );
+      // Send the request to the API
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/brands`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+          maxBodyLength: 50 * 1024 * 1024,
         }
+      );
 
-        if (formData.banner) {
-          const bannerResponse = await fetch(formData.banner);
-          if (!bannerResponse.ok)
-            throw new Error("Failed to fetch banner video");
-
-          const bannerBlob = await bannerResponse.blob();
-          const bannerExt =
-            formData.banner.split("?")[0].split(".").pop() || "mp4";
-          formDataToSend.append("banner", bannerBlob, `banner.${bannerExt}`);
-        }
-
-        if (formData.small_img) {
-          const smallImgResponse = await fetch(formData.small_img);
-          if (!smallImgResponse.ok)
-            throw new Error("Failed to fetch small image");
-
-          const smallImgBlob = await smallImgResponse.blob();
-          const smallImgExt =
-            formData.small_img.split("?")[0].split(".").pop() || "jpg";
-          formDataToSend.append(
-            "small_img",
-            smallImgBlob,
-            `small_img.${smallImgExt}`
-          );
-        }
-      } catch (fileError) {
-        console.error("Error processing files:", fileError);
-        setError(t("errors.fileProcessingFailed"));
-        setIsLoading(false);
-        setIsSubmitting(false);
-        return;
+      if (response?.status === 201) {
+        toast.success(t("success"));
+        router.push("/dashboard/brands");
+        router.refresh();
+      } else {
+        throw new Error(t("errors.failed"));
       }
-
-      // Log the size of the formData for debugging
-      console.log("Sending form data with files...");
-
-      // Send the form data to the API
-      const response = await fetch("/api/brands", {
-        method: "POST",
-        body: formDataToSend,
-      });
-
-      // Handle response
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.error || t("errors.failed"));
-      }
-
-      console.log("Brand created successfully:", responseData);
-
-      // Navigate back to brands page on success
-      router.push("/dashboard/brands");
-      router.refresh();
     } catch (err) {
       console.error("Error adding brand:", err);
       setError(err instanceof Error ? err.message : t("errors.failed"));
+      toast.error(err instanceof Error ? err.message : t("errors.failed"));
       window.scrollTo(0, 0);
     } finally {
       setIsLoading(false);
@@ -345,7 +440,7 @@ export default function AddBrandPage() {
                 className={`${currentStep >= step.index
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-500"
-                  } h-8 w-8 rounded-full flex items-center justify-center font-medium text-sm transition-colors`}
+                  } h - 8 w - 8 rounded - full flex items - center justify - center font - medium text - sm transition - colors`}
               >
                 {currentStep > step.index ? (
                   <Check className="h-4 w-4" />
@@ -363,7 +458,7 @@ export default function AddBrandPage() {
           <div className="absolute top-0 h-1 bg-gray-200 w-full"></div>
           <div
             className="absolute top-0 h-1 bg-blue-600 transition-all"
-            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+            style={{ width: `${(currentStep / (steps.length - 1)) * 100}% ` }}
           ></div>
         </div>
       </div>
@@ -592,10 +687,10 @@ export default function AddBrandPage() {
                   }
                   icon={<Image className="h-4 w-4" />}
                 />
-                {formData.main_image && (
+                {formData.main_image_preview && (
                   <div className="mt-2">
                     <img
-                      src={formData.main_image}
+                      src={formData.main_image_preview}
                       alt="Main image preview"
                       className="h-24 object-contain rounded border border-gray-200"
                     />
@@ -615,10 +710,10 @@ export default function AddBrandPage() {
                   }
                   icon={<Image className="h-4 w-4" />}
                 />
-                {formData.banner && (
+                {formData.banner_preview && (
                   <div className="mt-2">
                     <video
-                      src={formData.banner}
+                      src={formData.banner_preview}
                       controls
                       className="h-24 w-full object-contain rounded border border-gray-200"
                     />
@@ -640,10 +735,10 @@ export default function AddBrandPage() {
                   }
                   icon={<Image className="h-4 w-4" />}
                 />
-                {formData.small_img && (
+                {formData.small_img_preview && (
                   <div className="mt-2">
                     <img
-                      src={formData.small_img}
+                      src={formData.small_img_preview}
                       alt="Small image preview"
                       className="h-24 object-contain rounded border border-gray-200"
                     />
@@ -767,16 +862,14 @@ export default function AddBrandPage() {
                   <h4 className="text-sm font-medium text-gray-500 mb-2">
                     {t("fields.mainImage")}
                   </h4>
-                  {formData.main_image ? (
+                  {formData.main_image_preview && (
                     <div className="mt-2">
                       <img
-                        src={formData.main_image}
+                        src={formData.main_image_preview}
                         alt="Main image preview"
                         className="h-20 object-contain rounded border border-gray-200"
                       />
                     </div>
-                  ) : (
-                    <p className="text-gray-900">{t("review.notProvided")}</p>
                   )}
                 </div>
 
@@ -784,16 +877,14 @@ export default function AddBrandPage() {
                   <h4 className="text-sm font-medium text-gray-500 mb-2">
                     {t("fields.banner")}
                   </h4>
-                  {formData.banner ? (
+                  {formData.banner_preview && (
                     <div className="mt-2">
                       <video
-                        src={formData.banner}
+                        src={formData.banner_preview}
                         controls
                         className="h-20 w-full object-contain rounded border border-gray-200"
                       />
                     </div>
-                  ) : (
-                    <p className="text-gray-900">{t("review.notProvided")}</p>
                   )}
                 </div>
 
@@ -801,16 +892,14 @@ export default function AddBrandPage() {
                   <h4 className="text-sm font-medium text-gray-500 mb-2">
                     {t("fields.smallImg")}
                   </h4>
-                  {formData.small_img ? (
+                  {formData.small_img_preview && (
                     <div className="mt-2">
                       <img
-                        src={formData.small_img}
+                        src={formData.small_img_preview}
                         alt="Small image preview"
                         className="h-20 object-contain rounded border border-gray-200"
                       />
                     </div>
-                  ) : (
-                    <p className="text-gray-900">{t("review.notProvided")}</p>
                   )}
                 </div>
               </div>
@@ -933,10 +1022,10 @@ export default function AddBrandPage() {
             type="button"
             onClick={handleNextStep}
             disabled={isReviewStep && !hasReviewed}
-            className={`bg-blue-600 hover:bg-blue-700 ${isReviewStep && !hasReviewed
+            className={`bg - blue - 600 hover: bg - blue - 700 ${isReviewStep && !hasReviewed
               ? "opacity-50 cursor-not-allowed"
               : ""
-              }`}
+              } `}
           >
             {t("steps.next")}
             <ChevronRight className="ml-1 h-4 w-4" />

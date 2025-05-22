@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     // Find the career application by ID
     const career = await prisma.careers.findUnique({
@@ -36,7 +36,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     // Find the career application first to get the CV file path
     const career = await prisma.careers.findUnique({

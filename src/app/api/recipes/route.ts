@@ -76,6 +76,13 @@ export async function POST(request: Request) {
       );
     }
 
+    let image_base64 = null;
+    if (body.image) {
+      const bytes = await body.image.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      image_base64 = `data:${body.image.type};base64,${buffer.toString('base64')}`;
+    }
+
     const ingredients = Array.isArray(body.ingredients) ? body.ingredients : [];
     const instructions = Array.isArray(body.instructions)
       ? body.instructions
@@ -87,7 +94,7 @@ export async function POST(request: Request) {
         prep_time: body.prep_time,
         cooking_time: body.cooking_time,
         servings: body.servings,
-        image: body.image || null,
+        image: image_base64 || null,
         ingredients: ingredients,
         instructions: instructions,
         dish: {

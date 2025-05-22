@@ -1,6 +1,36 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { deleteImageFile } from "@/lib/fileUtils";
+import fs from 'fs/promises';
+import path from 'path';
+
+// Helper function to validate base64 image
+function isValidBase64Image(str: string) {
+  try {
+    // Check if string starts with data:image
+    if (!str.startsWith('data:image/')) {
+      return false;
+    }
+    // Check if it's a valid base64 string
+    const base64Regex = /^data:image\/[a-zA-Z]+;base64,([A-Za-z0-9+/=])+$/;
+    return base64Regex.test(str);
+  } catch {
+    return false;
+  }
+}
+
+// Helper function to convert image to base64
+async function convertImageToBase64(imagePath: string): Promise<string | null> {
+  try {
+    const fullPath = path.join(process.cwd(), 'public', imagePath);
+    const imageBuffer = await fs.readFile(fullPath);
+    const base64Image = `data:image/${path.extname(imagePath).slice(1)};base64,${imageBuffer.toString('base64')}`;
+    return base64Image;
+  } catch (error) {
+    console.error('Error converting image to base64:', error);
+    return null;
+  }
+}
+
 // GET /api/dish-categories/[id] - Get a single dish category
 export async function GET(
   request: Request,
@@ -27,7 +57,16 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(dishCategory);
+    // Convert image to base64 if it exists
+    let responseData = { ...dishCategory };
+    if (dishCategory.image) {
+      const base64Image = await convertImageToBase64(dishCategory.image);
+      if (base64Image) {
+        responseData.image = base64Image;
+      }
+    }
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Error fetching dish category:", error);
     return NextResponse.json(
@@ -73,9 +112,12 @@ export async function PUT(
       );
     }
 
-    // Delete old image file if exists
-    if (existingDishCategory.image) {
-      await deleteImageFile(existingDishCategory.image);
+    // Validate base64 image if provided
+    if (body.image !== undefined && !isValidBase64Image(body.image)) {
+      return NextResponse.json(
+        { error: "Invalid base64 image format" },
+        { status: 400 }
+      );
     }
 
     const dishCategory = await prisma.dishCategory.update({
@@ -83,8 +125,7 @@ export async function PUT(
       data: {
         name_ar: body.name_ar,
         name_en: body.name_en,
-        image:
-          body.image !== undefined ? body.image : existingDishCategory.image,
+        image: body.image !== undefined ? body.image : existingDishCategory.image,
       },
     });
 
@@ -138,11 +179,6 @@ export async function DELETE(
         },
         { status: 400 }
       );
-    }
-
-    // Delete the image file if it exists
-    if (dishCategory.image) {
-      await deleteImageFile(dishCategory.image);
     }
 
     // Delete the dish category
