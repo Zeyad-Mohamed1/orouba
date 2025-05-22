@@ -170,25 +170,6 @@ export default function SignIn() {
                 )}
               </button>
             </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm">
-                <a
-                  href="/auth/forgot-password"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  {t("forgotPassword")}
-                </a>
-              </div>
-              <div className="text-sm">
-                <a
-                  href="/auth/signup"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  {t("createAccount")}
-                </a>
-              </div>
-            </div>
           </form>
         </div>
       </div>

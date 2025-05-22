@@ -26,20 +26,8 @@ function localeMiddleware(req: NextRequest) {
   if (pathnameHasLocale) return NextResponse.next();
 
   // Get locale from accept-language header or default to 'en'
-  const acceptLanguage = req.headers.get("accept-language");
   let locale: Locale = routing.defaultLocale;
-
-  if (acceptLanguage) {
-    const preferredLocale = acceptLanguage
-      .split(",")[0]
-      .split("-")[0]
-      .toLowerCase();
-
-    if (routing.locales.includes(preferredLocale as Locale)) {
-      locale = preferredLocale as Locale;
-    }
-  }
-
+  
   // Redirect to the locale path
   return NextResponse.redirect(
     new URL(`/${locale}${pathname}${search}`, req.url)
